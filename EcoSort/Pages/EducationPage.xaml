@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="EcoSort.Pages.EducationPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer>
+        <Grid MaxWidth="1000" Margin="24" RowSpacing="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Spacing="8">
+                <TextBlock Text="Educational Hub" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Text="Practical recycling, composting, and disposal guidance for everyday items." Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock Text="Rules vary by city, so always confirm with local programs before disposal." TextWrapping="WrapWholeWords" />
+            </StackPanel>
+
+            <Grid Grid.Row="1" ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Padding="14" CornerRadius="12" BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Recycling Basics" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock Text="• Empty and rinse containers before recycling." TextWrapping="WrapWholeWords" />
+                        <TextBlock Text="• Keep paper and cardboard dry." TextWrapping="WrapWholeWords" />
+                        <TextBlock Text="• Never bag recyclables unless local rules allow it." TextWrapping="WrapWholeWords" />
+                        <TextBlock Text="• Remove food residue to reduce contamination." TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Padding="14" CornerRadius="12" BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Composting Basics" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock Text="• Compost fruit and vegetable scraps." TextWrapping="WrapWholeWords" />
+                        <TextBlock Text="• Avoid meat, oils, and dairy in home compost bins." TextWrapping="WrapWholeWords" />
+                        <TextBlock Text="• Mix greens (food scraps) and browns (dry leaves/paper)." TextWrapping="WrapWholeWords" />
+                        <TextBlock Text="• Keep compost slightly moist, not soaked." TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Grid.Row="2" Padding="14" CornerRadius="12" BorderThickness="1">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Common Misconceptions" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock Text="Myth: If in doubt, put it in recycling." TextWrapping="WrapWholeWords" />
+                    <TextBlock Text="Fact: " FontWeight="SemiBold" />
+                    <TextBlock Text="When uncertain, check local rules. Guessing can contaminate whole batches." TextWrapping="WrapWholeWords" Margin="0,-4,0,0" />
+
+                    <TextBlock Text="Myth: All plastics are recyclable." TextWrapping="WrapWholeWords" Margin="0,8,0,0" />
+                    <TextBlock Text="Fact: " FontWeight="SemiBold" />
+                    <TextBlock Text="Acceptance depends on resin type and local facilities." TextWrapping="WrapWholeWords" Margin="0,-4,0,0" />
+
+                    <TextBlock Text="Myth: Broken glass always goes in recycling bins." TextWrapping="WrapWholeWords" Margin="0,8,0,0" />
+                    <TextBlock Text="Fact: " FontWeight="SemiBold" />
+                    <TextBlock Text="Some programs require separate drop-off for safety." TextWrapping="WrapWholeWords" Margin="0,-4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="3" Padding="14" CornerRadius="12" BorderThickness="1">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Material-Specific Tips" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock Text="• Batteries: use designated hazardous waste drop-off." TextWrapping="WrapWholeWords" />
+                    <TextBlock Text="• Clothes/Shoes: prefer donation or textile collection programs." TextWrapping="WrapWholeWords" />
+                    <TextBlock Text="• Cardboard: flatten to save space and improve processing." TextWrapping="WrapWholeWords" />
+                    <TextBlock Text="• Glass: rinse and separate by local color/sorting guidance." TextWrapping="WrapWholeWords" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</Page>

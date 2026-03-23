@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="EcoSort.Pages.HomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer>
+        <Grid MaxWidth="1000" Margin="24" RowSpacing="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Spacing="8">
+                <TextBlock Text="Welcome to EcoSort" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Text="Quickly classify waste images and learn sustainable disposal habits." Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock Text="This dashboard highlights quick actions, recent activity, and practical sustainability tips." TextWrapping="WrapWholeWords" />
+            </StackPanel>
+
+            <Border Grid.Row="1" Padding="16" CornerRadius="12" BorderThickness="1">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Quick Actions" Style="{StaticResource SubtitleTextBlockStyle}" />
+
+                    <FlipView x:Name="QuickActionsFlipView" Height="170">
+                        <FlipView.ItemTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="8" BorderThickness="1" Padding="14">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <TextBlock Text="{Binding Description}" TextWrapping="WrapWholeWords" />
+                                        <Button HorizontalAlignment="Left"
+                                                Content="{Binding ActionLabel}"
+                                                Style="{StaticResource AccentButtonStyle}"
+                                                Tag="{Binding ActionKey}"
+                                                Click="QuickActionButton_Click" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </FlipView.ItemTemplate>
+                    </FlipView>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="2" Padding="16" CornerRadius="12" BorderThickness="1">
+                <StackPanel Spacing="10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Recent Classifications" Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" />
+
+                        <Button x:Name="ClearHistoryButton" Grid.Column="1" Content="Clear All" Click="ClearHistoryButton_Click" IsEnabled="False" />
+                    </Grid>
+
+                    <FlipView x:Name="RecentFlipView" Height="250">
+                        <FlipView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid PointerExited="HistoryCard_PointerExited">
+                                    <Border CornerRadius="8" BorderThickness="1" Padding="12">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="2*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <Border CornerRadius="8" Margin="0,0,12,0">
+                                                <Image Source="{Binding ImageUri}" Stretch="UniformToFill" />
+                                            </Border>
+
+                                            <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding DisplayName}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                                <TextBlock Text="{Binding ConfidenceLevel}" />
+                                                <TextBlock Text="{Binding ConfidenceText}" />
+                                                <TextBlock Text="{Binding TimestampText}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Width="72"
+                                            Height="72"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Top"
+                                            Background="Transparent"
+                                            PointerEntered="DeleteHotspot_PointerEntered" />
+
+                                    <Button x:Name="RemoveHistoryItemButton"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Top"
+                                            Margin="8"
+                                            Visibility="Collapsed"
+                                            Tag="{Binding}"
+                                            Click="RemoveHistoryItemButton_Click"
+                                            PointerEntered="RemoveHistoryItemButton_PointerEntered"
+                                            ToolTipService.ToolTip="Remove from history">
+                                        <SymbolIcon Symbol="Delete" />
+                                    </Button>
+                                </Grid>
+                            </DataTemplate>
+                        </FlipView.ItemTemplate>
+                    </FlipView>
+
+                    <TextBlock x:Name="NoRecentItemsText"
+                               Text="No recent items yet. Classifications will appear here as a carousel."
+                               TextWrapping="WrapWholeWords" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="3" Padding="16" CornerRadius="12" BorderThickness="1">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Sustainability Tips" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock x:Name="RotatingTipText" TextWrapping="WrapWholeWords" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</Page>
