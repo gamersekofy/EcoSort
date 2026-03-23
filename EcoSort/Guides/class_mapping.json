@@ -1,0 +1,89 @@
+{
+  "model_info": {
+    "name": "garbage_classifier_resnet50",
+    "checkpoint": "memberB_resnet50_aug_on.pth",
+    "onnx_model": "memberB_resnet50_aug_on.onnx",
+    "architecture": "ResNet50",
+    "test_accuracy": 0.9709,
+    "test_macro_f1": 0.9651,
+    "input_shape": [1, 3, 224, 224],
+    "output_shape": [1, 12],
+    "opset_version": 13
+  },
+  "preprocessing": {
+    "image_size": [224, 224],
+    "normalization_mean": [0.485, 0.456, 0.406],
+    "normalization_std": [0.229, 0.224, 0.225],
+    "channel_order": "RGB"
+  },
+  "classes": [
+    {
+      "index": 0,
+      "name": "battery",
+      "description": "Discarded batteries and battery-powered items"
+    },
+    {
+      "index": 1,
+      "name": "biological",
+      "description": "Organic waste, food waste, compostable items"
+    },
+    {
+      "index": 2,
+      "name": "brown-glass",
+      "description": "Brown glass bottles and containers"
+    },
+    {
+      "index": 3,
+      "name": "cardboard",
+      "description": "Cardboard boxes and cardboard waste"
+    },
+    {
+      "index": 4,
+      "name": "clothes",
+      "description": "Textile waste, clothing, fabrics"
+    },
+    {
+      "index": 5,
+      "name": "green-glass",
+      "description": "Green glass bottles and containers"
+    },
+    {
+      "index": 6,
+      "name": "metal",
+      "description": "Metal cans, metal items, aluminum waste"
+    },
+    {
+      "index": 7,
+      "name": "paper",
+      "description": "Paper waste, newspapers, printed materials"
+    },
+    {
+      "index": 8,
+      "name": "plastic",
+      "description": "Plastic bottles, plastic packaging, plastic waste"
+    },
+    {
+      "index": 9,
+      "name": "shoes",
+      "description": "Discarded shoes and footwear"
+    },
+    {
+      "index": 10,
+      "name": "trash",
+      "description": "General trash, non-classified waste"
+    },
+    {
+      "index": 11,
+      "name": "white-glass",
+      "description": "Clear/white glass bottles and containers"
+    }
+  ],
+  "onnx_runtime": {
+    "input_node_name": "images",
+    "output_node_name": "logits",
+    "execution_providers": [
+      "DmlExecutionProvider",
+      "CpuExecutionProvider"
+    ]
+  }
+}

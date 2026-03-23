@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "EcoSort (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "EcoSort (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
