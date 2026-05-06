@@ -2,10 +2,12 @@ using EcoSort.Models;
 using EcoSort.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Shapes;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
@@ -16,6 +18,7 @@ using Windows.Media.MediaProperties;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
+using Windows.UI;
 using WinRT.Interop;
 
 namespace EcoSort.Pages;
@@ -23,21 +26,25 @@ namespace EcoSort.Pages;
 public sealed partial class ClassifyPage : Page
 {
     private readonly GarbageClassificationService _classificationService;
+    private LiveInferenceService? _liveInferenceService;
 
     private readonly SolidColorBrush _defaultDropBrush;
     private readonly SolidColorBrush _hoverDropBrush;
 
     private MediaCapture? _mediaCapture;
     private MediaFrameSourceGroup? _mediaFrameSourceGroup;
-    private DispatcherTimer? _liveInferenceTimer;
     private bool _isCameraRunning;
-    private bool _isLiveInferenceTickRunning;
 
     public ClassifyPage()
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Enabled;
         _classificationService = new GarbageClassificationService();
+
+        // Initialize live inference service (only used if experimental feature is enabled)
+        _liveInferenceService = new LiveInferenceService(targetFps: 5);
+        _liveInferenceService.OnDetectionsUpdated += LiveInferenceService_OnDetectionsUpdated;
+        _liveInferenceService.OnInferenceError += LiveInferenceService_OnInferenceError;
 
         var accentColor = ResolveAccentColor();
         _defaultDropBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(200, accentColor.R, accentColor.G, accentColor.B));
@@ -54,7 +61,6 @@ public sealed partial class ClassifyPage : Page
     {
         base.OnNavigatedTo(e);
         UpdateExperimentalLiveInferenceBanner();
-        RefreshLiveInferenceCooldown();
         RefreshCameraButtonStates();
     }
 
@@ -86,17 +92,46 @@ public sealed partial class ClassifyPage : Page
 
     private async void StartCameraButton_Click(object sender, RoutedEventArgs e)
     {
-        ResultErrorText.Visibility = Visibility.Collapsed;
-
         try
         {
             await StartCameraPreviewAsync();
+            
+            // Start live inference ONLY if experimental feature is enabled
+            if (App.ExperimentalLiveInferenceEnabled && _liveInferenceService != null && _mediaCapture != null)
+            {
+                try
+                {
+                    // Initialize the service with the media capture instance
+                    await _liveInferenceService.InitializeAsync(_mediaCapture);
+                    
+                    var preferredSourceInfo = _mediaFrameSourceGroup?.SourceInfos
+                        .FirstOrDefault(x => x.SourceKind == MediaFrameSourceKind.Color && x.MediaStreamType == MediaStreamType.VideoPreview)
+                        ?? _mediaFrameSourceGroup?.SourceInfos.FirstOrDefault(x => x.SourceKind == MediaFrameSourceKind.Color);
+
+                    if (preferredSourceInfo != null)
+                    {
+                        var frameSource = _mediaCapture.FrameSources[preferredSourceInfo.Id];
+                        await _liveInferenceService.StartAsync(frameSource);
+                        DetectionOverlayCanvas.Visibility = Visibility.Visible;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ClassifyPage] Failed to start live inference: {ex.Message}");
+                    // Continue without live inference if it fails
+                    DetectionOverlayCanvas.Visibility = Visibility.Collapsed;
+                }
+            }
+            else
+            {
+                DetectionOverlayCanvas.Visibility = Visibility.Collapsed;
+            }
         }
         catch (Exception ex)
         {
-            ResultErrorText.Text = $"Unable to start camera preview. {ex.Message}";
+            ResultErrorText.Text = $"Failed to start camera: {ex.Message}";
             ResultErrorText.Visibility = Visibility.Visible;
-            await StopCameraPreviewAsync();
+            StartCameraButton.IsEnabled = true;
         }
     }
 
@@ -123,15 +158,23 @@ public sealed partial class ClassifyPage : Page
 
     private async void StopCameraButton_Click(object sender, RoutedEventArgs e)
     {
-        await StopCameraPreviewAsync();
-    }
-
-    private void RefreshLiveInferenceCooldown()
-    {
-        EnsureLiveInferenceTimer();
-        if (_liveInferenceTimer is not null)
+        try
         {
-            _liveInferenceTimer.Interval = TimeSpan.FromSeconds(App.ExperimentalLiveInferenceCooldownSeconds);
+            // Stop live inference first if it's running
+            if (_liveInferenceService != null)
+            {
+                await _liveInferenceService.StopAsync();
+            }
+
+            ClearDetectionOverlay();
+            DetectionOverlayCanvas.Visibility = Visibility.Collapsed;
+            
+            await StopCameraPreviewAsync();
+        }
+        catch (Exception ex)
+        {
+            ResultErrorText.Text = $"Error stopping camera: {ex.Message}";
+            ResultErrorText.Visibility = Visibility.Visible;
         }
     }
 
@@ -183,12 +226,6 @@ public sealed partial class ClassifyPage : Page
 
         _isCameraRunning = true;
         RefreshCameraButtonStates();
-        RefreshLiveInferenceCooldown();
-
-        if (App.ExperimentalLiveInferenceEnabled)
-        {
-            _liveInferenceTimer?.Start();
-        }
     }
 
     private async Task<StorageFile?> CapturePhotoFromPreviewAsync()
@@ -205,8 +242,6 @@ public sealed partial class ClassifyPage : Page
 
     private async Task StopCameraPreviewAsync()
     {
-        _liveInferenceTimer?.Stop();
-
         if (_mediaCapture is not null)
         {
             _mediaCapture.Dispose();
@@ -224,48 +259,6 @@ public sealed partial class ClassifyPage : Page
         RefreshCameraButtonStates();
 
         await Task.CompletedTask;
-    }
-
-    private void EnsureLiveInferenceTimer()
-    {
-        if (_liveInferenceTimer is not null)
-        {
-            return;
-        }
-
-        _liveInferenceTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromSeconds(App.ExperimentalLiveInferenceCooldownSeconds)
-        };
-        _liveInferenceTimer.Tick += LiveInferenceTimer_Tick;
-    }
-
-    private async void LiveInferenceTimer_Tick(object? sender, object e)
-    {
-        if (!_isCameraRunning || !App.ExperimentalLiveInferenceEnabled || _isLiveInferenceTickRunning)
-        {
-            return;
-        }
-
-        _isLiveInferenceTickRunning = true;
-        try
-        {
-            var file = await CapturePhotoFromPreviewAsync();
-            if (file is null)
-            {
-                return;
-            }
-
-            await ClassifyFileAsync(file, addToHistory: true);
-        }
-        catch
-        {
-            _liveInferenceTimer?.Stop();
-        }
-        finally
-        {
-            _isLiveInferenceTickRunning = false;
-        }
     }
 
     private async Task ClassifyFileAsync(StorageFile file, bool addToHistory)
@@ -351,20 +344,16 @@ public sealed partial class ClassifyPage : Page
             || file.FileType.Equals(".png", StringComparison.OrdinalIgnoreCase);
     }
 
+    private void ResetDropVisuals()
+    {
+        DropHoverBorder.Visibility = Visibility.Collapsed;
+        DropHintText.Opacity = 1.0;
+    }
+
     private void DropTargetBorder_DragOver(object sender, DragEventArgs e)
     {
-        if (e.DataView.Contains(StandardDataFormats.StorageItems))
-        {
-            e.AcceptedOperation = DataPackageOperation.Copy;
-            e.DragUIOverride.Caption = "Drop image to classify";
-            e.DragUIOverride.IsContentVisible = true;
-            ActivateDropVisuals();
-        }
-        else
-        {
-            e.AcceptedOperation = DataPackageOperation.None;
-            ResetDropVisuals();
-        }
+        e.AcceptedOperation = DataPackageOperation.Copy;
+        DropHoverBorder.Visibility = Visibility.Visible;
     }
 
     private void DropTargetBorder_DragLeave(object sender, DragEventArgs e)
@@ -374,48 +363,113 @@ public sealed partial class ClassifyPage : Page
 
     private async void DropTargetBorder_Drop(object sender, DragEventArgs e)
     {
-        ResultErrorText.Visibility = Visibility.Collapsed;
-
-        if (!e.DataView.Contains(StandardDataFormats.StorageItems))
-        {
-            ResultErrorText.Text = "Drop an image file (.jpg, .jpeg, .png).";
-            ResultErrorText.Visibility = Visibility.Visible;
-            ResetDropVisuals();
-            return;
-        }
-
-        var droppedItems = await e.DataView.GetStorageItemsAsync();
-        var file = droppedItems.OfType<StorageFile>().FirstOrDefault(IsSupportedImage);
-
-        if (file is null)
-        {
-            ResultErrorText.Text = "No supported image was found in the dropped items.";
-            ResultErrorText.Visibility = Visibility.Visible;
-            ResetDropVisuals();
-            return;
-        }
-
-        await ClassifyFileAsync(file, addToHistory: true);
+        ResetDropVisuals();
+        await HandleDropAsync(e.DataView);
     }
 
-    private void ActivateDropVisuals()
+    private async Task HandleDropAsync(DataPackageView dataPackageView)
     {
-        DropHoverBorder.Visibility = Visibility.Visible;
-        DropTargetBorder.MinHeight = 380;
-        DropHintText.Text = "Release to classify image";
-        DropHintText.Foreground = _hoverDropBrush;
+        try
+        {
+            if (dataPackageView.Contains(StandardDataFormats.StorageItems))
+            {
+                var storageItems = await dataPackageView.GetStorageItemsAsync();
+                foreach (var item in storageItems.OfType<StorageFile>())
+                {
+                    if (item.ContentType.StartsWith("image/"))
+                    {
+                        await ClassifyFileAsync(item, addToHistory: true);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ResultErrorText.Text = $"Error handling drop: {ex.Message}";
+            ResultErrorText.Visibility = Visibility.Visible;
+        }
     }
 
-    private void ResetDropVisuals()
+    private void LiveInferenceService_OnDetectionsUpdated(List<DetectionResult> detections)
     {
-        DropHoverBorder.Visibility = Visibility.Collapsed;
-        DropTargetBorder.MinHeight = 320;
-        DropHintText.Text = "Drag and drop an image here (.jpg, .jpeg, .png), or use Classify Item.";
-        DropHintText.Foreground = _defaultDropBrush;
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            RenderDetections(detections);
+        });
+    }
+
+    private void LiveInferenceService_OnInferenceError(string errorMessage)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            System.Diagnostics.Debug.WriteLine($"[ClassifyPage] Live inference error: {errorMessage}");
+        });
+    }
+
+    private void RenderDetections(List<DetectionResult> detections)
+    {
+        DetectionOverlayCanvas.Children.Clear();
+
+        if (DetectionOverlayCanvas.Visibility != Visibility.Visible || detections == null || detections.Count == 0)
+            return;
+
+        // Get canvas dimensions (normalized coordinates are 0.0 to 1.0)
+        var canvasWidth = DetectionOverlayCanvas.ActualWidth;
+        var canvasHeight = DetectionOverlayCanvas.ActualHeight;
+
+        foreach (var detection in detections)
+        {
+            // Convert normalized coordinates to canvas pixels
+            double x1 = detection.X1 * canvasWidth;
+            double y1 = detection.Y1 * canvasHeight;
+            double x2 = detection.X2 * canvasWidth;
+            double y2 = detection.Y2 * canvasHeight;
+            double width = x2 - x1;
+            double height = y2 - y1;
+
+            // Draw bounding box
+            var rect = new Rectangle
+            {
+                Width = width,
+                Height = height,
+                Stroke = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0, 255, 0)), // Green
+                StrokeThickness = 2
+            };
+            Canvas.SetLeft(rect, x1);
+            Canvas.SetTop(rect, y1);
+            DetectionOverlayCanvas.Children.Add(rect);
+
+            // Draw label if classification exists
+            if (detection.Classification != null)
+            {
+                var label = new TextBlock
+                {
+                    Text = $"{detection.Classification.DisplayName} ({detection.DetectorConfidence:F1}%)",
+                    Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0, 255, 0)),
+                    FontSize = 12
+                };
+                Canvas.SetLeft(label, x1);
+                Canvas.SetTop(label, Math.Max(0, y1 - 20));
+                DetectionOverlayCanvas.Children.Add(label);
+            }
+        }
+    }
+
+    private void ClearDetectionOverlay()
+    {
+        DetectionOverlayCanvas.Children.Clear();
     }
 
     private async void ClassifyPage_Unloaded(object sender, RoutedEventArgs e)
     {
-        await StopCameraPreviewAsync();
+        if (_isCameraRunning)
+        {
+            await StopCameraPreviewAsync();
+        }
+
+        if (_liveInferenceService != null)
+        {
+            await _liveInferenceService.StopAsync();
+        }
     }
 }

@@ -67,14 +67,23 @@
                                Visibility="Collapsed" />
 
                     <StackPanel Spacing="8" Margin="8">
-                        <MediaPlayerElement x:Name="CameraPreviewElement"
-                                            Width="640"
-                                            Height="360"
-                                            HorizontalAlignment="Center"
-                                            Stretch="UniformToFill"
-                                            AreTransportControlsEnabled="False"
-                                            AutoPlay="True"
-                                            Visibility="Collapsed" />
+                        <Grid x:Name="CameraContainer" HorizontalAlignment="Center">
+                            <MediaPlayerElement x:Name="CameraPreviewElement"
+                                                Width="640"
+                                                Height="360"
+                                                HorizontalAlignment="Center"
+                                                Stretch="UniformToFill"
+                                                AreTransportControlsEnabled="False"
+                                                AutoPlay="True"
+                                                Visibility="Collapsed" />
+                            <Canvas x:Name="DetectionOverlayCanvas"
+                                    Width="640"
+                                    Height="360"
+                                    HorizontalAlignment="Center"
+                                    Background="Transparent"
+                                    IsHitTestVisible="False"
+                                    Visibility="Collapsed" />
+                        </Grid>
                         <Image x:Name="PreviewImage"
                                MaxHeight="300"
                                Stretch="Uniform"

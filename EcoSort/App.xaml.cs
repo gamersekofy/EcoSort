@@ -32,6 +32,8 @@ namespace EcoSort
             }
         }
 
+        // Deprecated: Kept for backward compatibility. Frame throttling is now handled internally by LiveInferenceService.
+        [Obsolete("Use LiveInferenceService's built-in frame throttling instead")]
         public static int ExperimentalLiveInferenceCooldownSeconds
         {
             get

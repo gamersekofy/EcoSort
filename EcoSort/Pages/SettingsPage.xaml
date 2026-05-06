@@ -20,22 +20,10 @@
                                   Header="Enable Live Inference (Experimental)"
                                   Toggled="LiveInferenceToggle_Toggled" />
 
-                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <TextBlock Text="Live inference cooldown" VerticalAlignment="Center" />
-                        <ComboBox x:Name="LiveInferenceCooldownCombo"
-                                  Width="120"
-                                  SelectionChanged="LiveInferenceCooldownCombo_SelectionChanged">
-                            <ComboBoxItem Content="2 sec" Tag="2" />
-                            <ComboBoxItem Content="4 sec" Tag="4" />
-                            <ComboBoxItem Content="6 sec" Tag="6" />
-                            <ComboBoxItem Content="8 sec" Tag="8" />
-                        </ComboBox>
-                    </StackPanel>
-
                     <InfoBar IsOpen="True"
                              IsClosable="False"
                              Severity="Warning"
-                             Message="Live inference is experimental and may produce unstable or inconsistent results while this feature is under active development." />
+                             Message="Live inference is experimental and processes a continuous camera feed with real-time object detection. This feature uses continuous frame processing with frame throttling to maintain responsiveness. Results may be unstable while this feature is in active development." />
                 </StackPanel>
             </Border>
         </StackPanel>
