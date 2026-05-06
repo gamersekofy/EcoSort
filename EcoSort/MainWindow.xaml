@@ -37,6 +37,7 @@
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Name="HomeNavItem" Content="Home" Icon="Home" Tag="home" />
                 <NavigationViewItem x:Name="ClassifyNavItem" Content="Classify" Icon="Camera" Tag="classify" />
+                <NavigationViewItem x:Name="BenchmarkNavItem" Content="Benchmark" Icon="Clock" Tag="benchmark" />
                 <NavigationViewItem x:Name="EducationNavItem" Content="Learn" Icon="Library" Tag="education" />
                 <NavigationViewItem x:Name="CentersNavItem" Content="Centers" Icon="Map" Tag="centers" />
             </NavigationView.MenuItems>

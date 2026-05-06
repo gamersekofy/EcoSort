@@ -134,6 +134,12 @@ namespace EcoSort
                 return;
             }
 
+            if (pageType == typeof(BenchmarkPage))
+            {
+                AppNavigationView.SelectedItem = BenchmarkNavItem;
+                return;
+            }
+
             if (pageType == typeof(EducationPage))
             {
                 AppNavigationView.SelectedItem = EducationNavItem;
@@ -172,6 +178,7 @@ namespace EcoSort
             {
                 "home" => typeof(HomePage),
                 "classify" => typeof(ClassifyPage),
+                "benchmark" => typeof(BenchmarkPage),
                 "education" => typeof(EducationPage),
                 "centers" => typeof(CentersPage),
                 _ => typeof(HomePage)
