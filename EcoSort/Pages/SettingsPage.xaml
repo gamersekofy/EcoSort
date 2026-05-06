@@ -11,6 +11,33 @@
         <StackPanel MaxWidth="900" Margin="24" Spacing="12">
             <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" />
             <TextBlock Text="Configuration options will be added as app capabilities grow." Style="{StaticResource BodyStrongTextBlockStyle}" />
+
+            <Border Padding="16" CornerRadius="12" BorderThickness="1">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Experimental Features" Style="{StaticResource SubtitleTextBlockStyle}" />
+
+                    <ToggleSwitch x:Name="LiveInferenceToggle"
+                                  Header="Enable Live Inference (Experimental)"
+                                  Toggled="LiveInferenceToggle_Toggled" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <TextBlock Text="Live inference cooldown" VerticalAlignment="Center" />
+                        <ComboBox x:Name="LiveInferenceCooldownCombo"
+                                  Width="120"
+                                  SelectionChanged="LiveInferenceCooldownCombo_SelectionChanged">
+                            <ComboBoxItem Content="2 sec" Tag="2" />
+                            <ComboBoxItem Content="4 sec" Tag="4" />
+                            <ComboBoxItem Content="6 sec" Tag="6" />
+                            <ComboBoxItem Content="8 sec" Tag="8" />
+                        </ComboBox>
+                    </StackPanel>
+
+                    <InfoBar IsOpen="True"
+                             IsClosable="False"
+                             Severity="Warning"
+                             Message="Live inference is experimental and may produce unstable or inconsistent results while this feature is under active development." />
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </Page>

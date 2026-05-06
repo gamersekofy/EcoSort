@@ -1,11 +1,13 @@
 using EcoSort.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Threading.Tasks;
 using Windows.System;
+using Windows.UI;
 
 namespace EcoSort.Pages;
 
@@ -26,8 +28,8 @@ public sealed partial class HomePage : Page
     {
         InitializeComponent();
 
-        QuickActionsFlipView.ItemsSource = QuickActions;
-        RecentFlipView.ItemsSource = RecentItems;
+        QuickActionsCarousel.ItemsSource = QuickActions;
+        RecentItemsCarousel.ItemsSource = RecentItems;
         RecentItems.CollectionChanged += RecentItems_CollectionChanged;
 
         _tipsTimer = new DispatcherTimer
@@ -47,10 +49,11 @@ public sealed partial class HomePage : Page
 
     private ObservableCollection<QuickActionCard> QuickActions { get; } =
     [
-        new("Classify a new item", "Start image classification using upload, drag-and-drop, or camera capture.", "Open Classifier", "open-classify"),
-        new("Learn disposal basics", "Review practical recycling and composting guidance in the educational hub.", "Open Education", "open-education"),
-        new("Project repository", "View EcoSort source code and ongoing roadmap updates.", "Open GitHub", "open-github"),
-        new("Windows AI + WinUI docs", "Explore official Microsoft docs for Windows AI and modern WinUI patterns.", "Open Docs", "open-docs")
+        new("\uE114", new SolidColorBrush(Color.FromArgb(255, 220, 53, 69)), "Capture & classify", "Use upload, drag-and-drop, or camera capture to classify an item instantly.", "Open Classifier", "open-classify"),
+        new("\uE82D", new SolidColorBrush(Color.FromArgb(255, 40, 167, 69)), "Learn disposal basics", "Open practical recycling and composting guidance in the educational hub.", "Open Education", "open-education"),
+        new("\uE943", new SolidColorBrush(Color.FromArgb(255, 36, 41, 46)), "Project repository", "Track source updates, roadmap notes, and implementation changes on GitHub.", "Open GitHub", "open-github"),
+        new("\uE943", new SolidColorBrush(Color.FromArgb(255, 0, 120, 212)), "Windows documentation", "Browse official Microsoft docs for Windows AI and WinUI development patterns.", "Open Docs", "open-docs"),
+        new("\uE9D9", new SolidColorBrush(Color.FromArgb(255, 255, 159, 64)), "Experimental mode", "Manage the live inference experimental toggle in settings.", "Open Settings", "open-settings")
     ];
 
     private void HomePage_Loaded(object sender, RoutedEventArgs e)
@@ -82,7 +85,7 @@ public sealed partial class HomePage : Page
     private void UpdateRecentState()
     {
         var hasItems = RecentItems.Count > 0;
-        RecentFlipView.Visibility = hasItems ? Visibility.Visible : Visibility.Collapsed;
+        RecentHistoryScrollViewer.Visibility = hasItems ? Visibility.Visible : Visibility.Collapsed;
         NoRecentItemsText.Visibility = hasItems ? Visibility.Collapsed : Visibility.Visible;
         ClearHistoryButton.IsEnabled = hasItems;
     }
@@ -107,6 +110,9 @@ public sealed partial class HomePage : Page
                 break;
             case "open-docs":
                 await LaunchUriAsync("https://learn.microsoft.com/windows/ai/");
+                break;
+            case "open-settings":
+                Frame?.Navigate(typeof(SettingsPage));
                 break;
         }
     }
@@ -155,5 +161,5 @@ public sealed partial class HomePage : Page
         await App.History.ClearAsync();
     }
 
-    private sealed record QuickActionCard(string Title, string Description, string ActionLabel, string ActionKey);
+    private sealed record QuickActionCard(string IconGlyph, SolidColorBrush IconBackground, string Title, string Description, string ActionLabel, string ActionKey);
 }

@@ -4,11 +4,15 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Media.Capture;
+using Windows.Media.Capture.Frames;
+using Windows.Media.Core;
+using Windows.Media.MediaProperties;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
@@ -23,10 +27,16 @@ public sealed partial class ClassifyPage : Page
     private readonly SolidColorBrush _defaultDropBrush;
     private readonly SolidColorBrush _hoverDropBrush;
 
+    private MediaCapture? _mediaCapture;
+    private MediaFrameSourceGroup? _mediaFrameSourceGroup;
+    private DispatcherTimer? _liveInferenceTimer;
+    private bool _isCameraRunning;
+    private bool _isLiveInferenceTickRunning;
+
     public ClassifyPage()
     {
         InitializeComponent();
-        NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
+        NavigationCacheMode = NavigationCacheMode.Enabled;
         _classificationService = new GarbageClassificationService();
 
         var accentColor = ResolveAccentColor();
@@ -35,6 +45,17 @@ public sealed partial class ClassifyPage : Page
 
         DropHoverBorder.Stroke = _hoverDropBrush;
         ResetDropVisuals();
+        UpdateExperimentalLiveInferenceBanner();
+
+        Unloaded += ClassifyPage_Unloaded;
+    }
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        UpdateExperimentalLiveInferenceBanner();
+        RefreshLiveInferenceCooldown();
+        RefreshCameraButtonStates();
     }
 
     private static Windows.UI.Color ResolveAccentColor()
@@ -47,6 +68,11 @@ public sealed partial class ClassifyPage : Page
         return Windows.UI.Color.FromArgb(255, 0, 120, 212);
     }
 
+    private void UpdateExperimentalLiveInferenceBanner()
+    {
+        ExperimentalLiveInferenceInfoBar.IsOpen = App.ExperimentalLiveInferenceEnabled;
+    }
+
     private async void ClassifyButton_Click(object sender, RoutedEventArgs e)
     {
         var file = await PickImageAsync();
@@ -55,22 +81,38 @@ public sealed partial class ClassifyPage : Page
             return;
         }
 
-        await ClassifyFileAsync(file);
+        await ClassifyFileAsync(file, addToHistory: true);
     }
 
-    private async void CaptureButton_Click(object sender, RoutedEventArgs e)
+    private async void StartCameraButton_Click(object sender, RoutedEventArgs e)
     {
         ResultErrorText.Visibility = Visibility.Collapsed;
 
         try
         {
-            var capturedFile = await CapturePhotoAsync();
-            if (capturedFile is null)
+            await StartCameraPreviewAsync();
+        }
+        catch (Exception ex)
+        {
+            ResultErrorText.Text = $"Unable to start camera preview. {ex.Message}";
+            ResultErrorText.Visibility = Visibility.Visible;
+            await StopCameraPreviewAsync();
+        }
+    }
+
+    private async void SnapPhotoButton_Click(object sender, RoutedEventArgs e)
+    {
+        ResultErrorText.Visibility = Visibility.Collapsed;
+
+        try
+        {
+            var file = await CapturePhotoFromPreviewAsync();
+            if (file is null)
             {
                 return;
             }
 
-            await ClassifyFileAsync(capturedFile);
+            await ClassifyFileAsync(file, addToHistory: true);
         }
         catch (Exception ex)
         {
@@ -79,24 +121,154 @@ public sealed partial class ClassifyPage : Page
         }
     }
 
-    private async Task<StorageFile?> CapturePhotoAsync()
+    private async void StopCameraButton_Click(object sender, RoutedEventArgs e)
     {
-        if (App.MainAppWindow is null)
+        await StopCameraPreviewAsync();
+    }
+
+    private void RefreshLiveInferenceCooldown()
+    {
+        EnsureLiveInferenceTimer();
+        if (_liveInferenceTimer is not null)
+        {
+            _liveInferenceTimer.Interval = TimeSpan.FromSeconds(App.ExperimentalLiveInferenceCooldownSeconds);
+        }
+    }
+
+    private void RefreshCameraButtonStates()
+    {
+        StartCameraButton.IsEnabled = !_isCameraRunning;
+        SnapPhotoButton.IsEnabled = _isCameraRunning;
+        StopCameraButton.IsEnabled = _isCameraRunning;
+    }
+
+    private async Task StartCameraPreviewAsync()
+    {
+        if (_isCameraRunning)
+        {
+            return;
+        }
+
+        var groups = await MediaFrameSourceGroup.FindAllAsync();
+        if (groups.Count == 0)
+        {
+            throw new InvalidOperationException("No camera devices found.");
+        }
+
+        _mediaFrameSourceGroup = groups.First();
+        _mediaCapture = new MediaCapture();
+
+        var initializationSettings = new MediaCaptureInitializationSettings
+        {
+            SourceGroup = _mediaFrameSourceGroup,
+            SharingMode = MediaCaptureSharingMode.SharedReadOnly,
+            StreamingCaptureMode = StreamingCaptureMode.Video,
+            MemoryPreference = MediaCaptureMemoryPreference.Cpu,
+            PhotoCaptureSource = PhotoCaptureSource.Auto
+        };
+
+        await _mediaCapture.InitializeAsync(initializationSettings);
+
+        var preferredSourceInfo = _mediaFrameSourceGroup.SourceInfos
+            .FirstOrDefault(x => x.SourceKind == MediaFrameSourceKind.Color && x.MediaStreamType == MediaStreamType.VideoPreview)
+            ?? _mediaFrameSourceGroup.SourceInfos.FirstOrDefault(x => x.SourceKind == MediaFrameSourceKind.Color)
+            ?? _mediaFrameSourceGroup.SourceInfos.First();
+
+        var frameSource = _mediaCapture.FrameSources[preferredSourceInfo.Id];
+        CameraPreviewElement.Source = MediaSource.CreateFromMediaFrameSource(frameSource);
+
+        CameraPreviewElement.Visibility = Visibility.Visible;
+        SnapPhotoButton.Visibility = Visibility.Visible;
+        StopCameraButton.Visibility = Visibility.Visible;
+
+        _isCameraRunning = true;
+        RefreshCameraButtonStates();
+        RefreshLiveInferenceCooldown();
+
+        if (App.ExperimentalLiveInferenceEnabled)
+        {
+            _liveInferenceTimer?.Start();
+        }
+    }
+
+    private async Task<StorageFile?> CapturePhotoFromPreviewAsync()
+    {
+        if (_mediaCapture is null)
         {
             return null;
         }
 
-        var captureUi = new CameraCaptureUI();
-        captureUi.PhotoSettings.Format = CameraCaptureUIPhotoFormat.Jpeg;
-        captureUi.PhotoSettings.AllowCropping = false;
-
-        var windowHandle = WindowNative.GetWindowHandle(App.MainAppWindow);
-        InitializeWithWindow.Initialize(captureUi, windowHandle);
-
-        return await captureUi.CaptureFileAsync(CameraCaptureUIMode.Photo);
+        var file = await ApplicationData.Current.TemporaryFolder.CreateFileAsync($"capture_{Guid.NewGuid():N}.jpg", CreationCollisionOption.GenerateUniqueName);
+        await _mediaCapture.CapturePhotoToStorageFileAsync(ImageEncodingProperties.CreateJpeg(), file);
+        return file;
     }
 
-    private async Task ClassifyFileAsync(StorageFile file)
+    private async Task StopCameraPreviewAsync()
+    {
+        _liveInferenceTimer?.Stop();
+
+        if (_mediaCapture is not null)
+        {
+            _mediaCapture.Dispose();
+            _mediaCapture = null;
+        }
+
+        _mediaFrameSourceGroup = null;
+        CameraPreviewElement.Source = null;
+        CameraPreviewElement.Visibility = Visibility.Collapsed;
+
+        SnapPhotoButton.Visibility = Visibility.Collapsed;
+        StopCameraButton.Visibility = Visibility.Collapsed;
+
+        _isCameraRunning = false;
+        RefreshCameraButtonStates();
+
+        await Task.CompletedTask;
+    }
+
+    private void EnsureLiveInferenceTimer()
+    {
+        if (_liveInferenceTimer is not null)
+        {
+            return;
+        }
+
+        _liveInferenceTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(App.ExperimentalLiveInferenceCooldownSeconds)
+        };
+        _liveInferenceTimer.Tick += LiveInferenceTimer_Tick;
+    }
+
+    private async void LiveInferenceTimer_Tick(object? sender, object e)
+    {
+        if (!_isCameraRunning || !App.ExperimentalLiveInferenceEnabled || _isLiveInferenceTickRunning)
+        {
+            return;
+        }
+
+        _isLiveInferenceTickRunning = true;
+        try
+        {
+            var file = await CapturePhotoFromPreviewAsync();
+            if (file is null)
+            {
+                return;
+            }
+
+            await ClassifyFileAsync(file, addToHistory: true);
+        }
+        catch
+        {
+            _liveInferenceTimer?.Stop();
+        }
+        finally
+        {
+            _isLiveInferenceTickRunning = false;
+        }
+    }
+
+    private async Task ClassifyFileAsync(StorageFile file, bool addToHistory)
     {
         ResultErrorText.Visibility = Visibility.Collapsed;
         LowConfidenceInfoBar.IsOpen = false;
@@ -106,13 +278,19 @@ public sealed partial class ClassifyPage : Page
             await ShowPreviewAsync(file);
 
             ClassifyButton.IsEnabled = false;
-            CaptureButton.IsEnabled = false;
+            StartCameraButton.IsEnabled = false;
+            SnapPhotoButton.IsEnabled = false;
+            StopCameraButton.IsEnabled = false;
             InferenceProgressRing.IsActive = true;
             InferenceProgressRing.Visibility = Visibility.Visible;
 
             var result = await _classificationService.ClassifyAsync(file);
             UpdateResultUi(result);
-            await App.History.AddFromFileAsync(result, file);
+
+            if (addToHistory)
+            {
+                await App.History.AddFromFileAsync(result, file);
+            }
         }
         catch (Exception ex)
         {
@@ -124,7 +302,7 @@ public sealed partial class ClassifyPage : Page
             InferenceProgressRing.IsActive = false;
             InferenceProgressRing.Visibility = Visibility.Collapsed;
             ClassifyButton.IsEnabled = true;
-            CaptureButton.IsEnabled = true;
+            RefreshCameraButtonStates();
             ResetDropVisuals();
         }
     }
@@ -217,7 +395,7 @@ public sealed partial class ClassifyPage : Page
             return;
         }
 
-        await ClassifyFileAsync(file);
+        await ClassifyFileAsync(file, addToHistory: true);
     }
 
     private void ActivateDropVisuals()
@@ -234,5 +412,10 @@ public sealed partial class ClassifyPage : Page
         DropTargetBorder.MinHeight = 320;
         DropHintText.Text = "Drag and drop an image here (.jpg, .jpeg, .png), or use Classify Item.";
         DropHintText.Foreground = _defaultDropBrush;
+    }
+
+    private async void ClassifyPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        await StopCameraPreviewAsync();
     }
 }

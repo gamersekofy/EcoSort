@@ -20,6 +20,11 @@
                 <TextBlock Text="Classify Item" Style="{StaticResource TitleTextBlockStyle}" />
                 <TextBlock Text="Upload an image to get category and disposal guidance." Style="{StaticResource BodyStrongTextBlockStyle}" />
                 <TextBlock Text="EcoSort supports a fixed set of 12 trained categories." TextWrapping="WrapWholeWords" />
+                <InfoBar x:Name="ExperimentalLiveInferenceInfoBar"
+                         IsOpen="False"
+                         IsClosable="False"
+                         Severity="Warning"
+                         Message="Experimental live inference mode is enabled in Settings. Results may be unstable while this feature is in active development." />
             </StackPanel>
 
             <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12" Margin="0,20,0,0">
@@ -27,9 +32,17 @@
                         Content="Classify Item"
                         Style="{StaticResource AccentButtonStyle}"
                         Click="ClassifyButton_Click" />
-                <Button x:Name="CaptureButton"
-                        Content="Capture Photo"
-                        Click="CaptureButton_Click" />
+                <Button x:Name="StartCameraButton"
+                        Content="Start Camera"
+                        Click="StartCameraButton_Click" />
+                <Button x:Name="SnapPhotoButton"
+                        Content="Snap Photo"
+                        Click="SnapPhotoButton_Click"
+                        Visibility="Collapsed" />
+                <Button x:Name="StopCameraButton"
+                        Content="Stop Camera"
+                        Click="StopCameraButton_Click"
+                        Visibility="Collapsed" />
                 <ProgressRing x:Name="InferenceProgressRing" Width="22" Height="22" IsActive="False" Visibility="Collapsed" />
             </StackPanel>
 
@@ -54,6 +67,14 @@
                                Visibility="Collapsed" />
 
                     <StackPanel Spacing="8" Margin="8">
+                        <MediaPlayerElement x:Name="CameraPreviewElement"
+                                            Width="640"
+                                            Height="360"
+                                            HorizontalAlignment="Center"
+                                            Stretch="UniformToFill"
+                                            AreTransportControlsEnabled="False"
+                                            AutoPlay="True"
+                                            Visibility="Collapsed" />
                         <Image x:Name="PreviewImage"
                                MaxHeight="300"
                                Stretch="Uniform"

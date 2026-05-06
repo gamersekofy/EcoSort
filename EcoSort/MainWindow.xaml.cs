@@ -46,12 +46,36 @@ namespace EcoSort
                 return;
             }
 
+            ApplyTitleBarTheme(AppTitleBar.ActualTheme);
+            AppTitleBar.ActualThemeChanged += AppTitleBar_ActualThemeChanged;
+        }
+
+        private void AppTitleBar_ActualThemeChanged(FrameworkElement sender, object args)
+        {
+            ApplyTitleBarTheme(sender.ActualTheme);
+        }
+
+        private void ApplyTitleBarTheme(ElementTheme theme)
+        {
             var titleBar = _appWindow.TitleBar;
+
+            var isDark = theme == ElementTheme.Dark;
+            var foreground = isDark
+                ? Windows.UI.Color.FromArgb(255, 255, 255, 255)
+                : Windows.UI.Color.FromArgb(255, 20, 20, 20);
+            var hoverBackground = isDark
+                ? Windows.UI.Color.FromArgb(60, 255, 255, 255)
+                : Windows.UI.Color.FromArgb(40, 0, 0, 0);
+            var pressedBackground = isDark
+                ? Windows.UI.Color.FromArgb(100, 255, 255, 255)
+                : Windows.UI.Color.FromArgb(70, 0, 0, 0);
+
             titleBar.ButtonBackgroundColor = Windows.UI.Color.FromArgb(0, 0, 0, 0);
             titleBar.ButtonInactiveBackgroundColor = Windows.UI.Color.FromArgb(0, 0, 0, 0);
-            titleBar.ButtonForegroundColor = Windows.UI.Color.FromArgb(255, 255, 255, 255);
-            titleBar.ButtonHoverBackgroundColor = Windows.UI.Color.FromArgb(60, 255, 255, 255);
-            titleBar.ButtonPressedBackgroundColor = Windows.UI.Color.FromArgb(100, 255, 255, 255);
+            titleBar.ButtonForegroundColor = foreground;
+            titleBar.ButtonInactiveForegroundColor = foreground;
+            titleBar.ButtonHoverBackgroundColor = hoverBackground;
+            titleBar.ButtonPressedBackgroundColor = pressedBackground;
         }
 
         private void ConfigureWindowSizeConstraints()

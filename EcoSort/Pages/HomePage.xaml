@@ -26,23 +26,44 @@
                 <StackPanel Spacing="10">
                     <TextBlock Text="Quick Actions" Style="{StaticResource SubtitleTextBlockStyle}" />
 
-                    <FlipView x:Name="QuickActionsFlipView" Height="170">
-                        <FlipView.ItemTemplate>
-                            <DataTemplate>
-                                <Border CornerRadius="8" BorderThickness="1" Padding="14">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="{Binding Title}" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                        <TextBlock Text="{Binding Description}" TextWrapping="WrapWholeWords" />
-                                        <Button HorizontalAlignment="Left"
-                                                Content="{Binding ActionLabel}"
-                                                Style="{StaticResource AccentButtonStyle}"
-                                                Tag="{Binding ActionKey}"
-                                                Click="QuickActionButton_Click" />
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </FlipView.ItemTemplate>
-                    </FlipView>
+                    <ScrollViewer HorizontalScrollMode="Enabled"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollMode="Disabled"
+                                  VerticalScrollBarVisibility="Disabled"
+                                  ZoomMode="Disabled">
+                        <ItemsControl x:Name="QuickActionsCarousel">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="12" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Width="320"
+                                            CornerRadius="8"
+                                            BorderThickness="1"
+                                            Padding="14"
+                                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                                        <StackPanel Spacing="10">
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <Border Width="34" Height="34" CornerRadius="17" Background="{Binding IconBackground}">
+                                                    <FontIcon Glyph="{Binding IconGlyph}" Foreground="White" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <TextBlock Text="{Binding Title}" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
+                                            </StackPanel>
+
+                                            <TextBlock Text="{Binding Description}" TextWrapping="WrapWholeWords" />
+                                            <Button HorizontalAlignment="Left"
+                                                    Content="{Binding ActionLabel}"
+                                                    Style="{StaticResource AccentButtonStyle}"
+                                                    Tag="{Binding ActionKey}"
+                                                    Click="QuickActionButton_Click" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </StackPanel>
             </Border>
 
@@ -59,52 +80,68 @@
                         <Button x:Name="ClearHistoryButton" Grid.Column="1" Content="Clear All" Click="ClearHistoryButton_Click" IsEnabled="False" />
                     </Grid>
 
-                    <FlipView x:Name="RecentFlipView" Height="250">
-                        <FlipView.ItemTemplate>
-                            <DataTemplate>
-                                <Grid PointerExited="HistoryCard_PointerExited">
-                                    <Border CornerRadius="8" BorderThickness="1" Padding="12">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="2*" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
+                    <ScrollViewer x:Name="RecentHistoryScrollViewer"
+                                  HorizontalScrollMode="Enabled"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollMode="Disabled"
+                                  VerticalScrollBarVisibility="Disabled"
+                                  ZoomMode="Disabled">
+                        <ItemsControl x:Name="RecentItemsCarousel">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="12" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid PointerExited="HistoryCard_PointerExited">
+                                        <Border Width="420"
+                                                CornerRadius="8"
+                                                BorderThickness="1"
+                                                Padding="12"
+                                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="2*" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
 
-                                            <Border CornerRadius="8" Margin="0,0,12,0">
-                                                <Image Source="{Binding ImageUri}" Stretch="UniformToFill" />
-                                            </Border>
+                                                <Border CornerRadius="8" Margin="0,0,12,0">
+                                                    <Image Source="{Binding ImageUri}" Stretch="UniformToFill" />
+                                                </Border>
 
-                                            <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding DisplayName}" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                                <TextBlock Text="{Binding ConfidenceLevel}" />
-                                                <TextBlock Text="{Binding ConfidenceText}" />
-                                                <TextBlock Text="{Binding TimestampText}" />
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
+                                                <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                                    <TextBlock Text="{Binding ConfidenceLevel}" />
+                                                    <TextBlock Text="{Binding ConfidenceText}" />
+                                                    <TextBlock Text="{Binding TimestampText}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
 
-                                    <Border Width="72"
-                                            Height="72"
-                                            HorizontalAlignment="Right"
-                                            VerticalAlignment="Top"
-                                            Background="Transparent"
-                                            PointerEntered="DeleteHotspot_PointerEntered" />
+                                        <Border Width="72"
+                                                Height="72"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Top"
+                                                Background="Transparent"
+                                                PointerEntered="DeleteHotspot_PointerEntered" />
 
-                                    <Button x:Name="RemoveHistoryItemButton"
-                                            HorizontalAlignment="Right"
-                                            VerticalAlignment="Top"
-                                            Margin="8"
-                                            Visibility="Collapsed"
-                                            Tag="{Binding}"
-                                            Click="RemoveHistoryItemButton_Click"
-                                            PointerEntered="RemoveHistoryItemButton_PointerEntered"
-                                            ToolTipService.ToolTip="Remove from history">
-                                        <SymbolIcon Symbol="Delete" />
-                                    </Button>
-                                </Grid>
-                            </DataTemplate>
-                        </FlipView.ItemTemplate>
-                    </FlipView>
+                                        <Button x:Name="RemoveHistoryItemButton"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Top"
+                                                Margin="8"
+                                                Visibility="Collapsed"
+                                                Tag="{Binding}"
+                                                Click="RemoveHistoryItemButton_Click"
+                                                PointerEntered="RemoveHistoryItemButton_PointerEntered"
+                                                ToolTipService.ToolTip="Remove from history">
+                                            <SymbolIcon Symbol="Delete" />
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
 
                     <TextBlock x:Name="NoRecentItemsText"
                                Text="No recent items yet. Classifications will appear here as a carousel."
