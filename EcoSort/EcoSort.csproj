@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
@@ -14,6 +14,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Page Remove="Pages\BenchmarkPage.xaml" />
     <Page Remove="Pages\CentersPage.xaml" />
     <Page Remove="Pages\ClassifyPage.xaml" />
     <Page Remove="Pages\EducationPage.xaml" />
@@ -40,6 +41,7 @@
   <ItemGroup>
     <Page Include="Pages\HomePage.xaml" />
     <Page Include="Pages\ClassifyPage.xaml" />
+    <Page Include="Pages\BenchmarkPage.xaml" />
     <Page Include="Pages\EducationPage.xaml" />
     <Page Include="Pages\CentersPage.xaml" />
     <Page Include="Pages\SettingsPage.xaml" />
@@ -63,6 +65,9 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Pages\BenchmarkPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </None>
     <None Update="Pages\CentersPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </None>
